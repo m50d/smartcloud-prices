@@ -18,7 +18,7 @@ final case class PricesRoutes[F[_]: Sync](pricesService: PricesService[F]) exten
 
   private val get: HttpRoutes[F] = HttpRoutes.of {
     case GET -> Root :? InstanceKindQueryParam(k) =>
-      pricesService.get(k).map(Ok(_))
+      pricesService.get(k).flatMap(Ok(_))
   }
 
   def routes: HttpRoutes[F] =
