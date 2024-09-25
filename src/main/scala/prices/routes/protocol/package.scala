@@ -10,6 +10,6 @@ package object protocol {
   implicit val instanceKindQueryParam: QueryParamDecoder[InstanceKind] =
     QueryParamDecoder[String].map(InstanceKind.apply)
 
-  object InstanceKindQueryParam extends QueryParamDecoderMatcher[InstanceKind]("instanceKind")
+  object InstanceKindQueryParam extends QueryParamDecoderMatcher[InstanceKind]("kind")
 
 }
