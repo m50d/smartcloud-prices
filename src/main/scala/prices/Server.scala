@@ -8,16 +8,16 @@ import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.middleware.Logger
 import prices.config.Config
 import prices.routes.InstanceKindRoutes
-import prices.services.SmartcloudInstanceKindService
+import prices.services.SmartcloudService
 
 object Server {
 
   def serve(config: Config): Stream[IO, ExitCode] = {
     val resource = for {
       client <- EmberClientBuilder.default[IO].build
-      instanceKindService = SmartcloudInstanceKindService.make[IO](
+      instanceKindService = SmartcloudService.make[IO](
                               client,
-                              SmartcloudInstanceKindService.Config(
+                              SmartcloudService.Config(
                                 config.smartcloud.baseUri,
                                 config.smartcloud.token
                               )

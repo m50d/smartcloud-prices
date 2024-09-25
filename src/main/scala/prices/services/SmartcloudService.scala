@@ -11,7 +11,7 @@ import prices.services.Exception.APICallFailure
 
 import scala.util.control.NonFatal
 
-object SmartcloudInstanceKindService {
+object SmartcloudService {
 
   final case class Config(
       baseUri: Uri,
