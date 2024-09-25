@@ -27,9 +27,9 @@ object SmartcloudService {
 
     implicit val instanceKindsEntityDecoder: EntityDecoder[F, List[String]] = jsonOf[F, List[String]]
 
-    val getAllUri = config.baseUri / "instances"
+    private val getAllUri = config.baseUri / "instances"
 
-    val getAllRequest = Request[F](
+    private val getAllRequest = Request[F](
       method = Method.GET,
       uri = getAllUri,
       headers = Headers(
