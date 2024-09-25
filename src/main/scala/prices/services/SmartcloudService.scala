@@ -18,7 +18,7 @@ object SmartcloudService {
       token: String
   )
 
-  def make[F[_]: Concurrent](client: Client[F], config: Config): InstanceKindService[F] = new SmartcloudService(client, config)
+  def make[F[_]: Concurrent](client: Client[F], config: Config): InstanceKindService[F] with InstanceDetailsService[F] = new SmartcloudService(client, config)
 
   private final class SmartcloudService[F[_]: Concurrent](
       client: Client[F],
@@ -26,7 +26,7 @@ object SmartcloudService {
   ) extends InstanceKindService[F]
       with InstanceDetailsService[F] {
 
-    implicit val instanceKindsEntityDecoder: EntityDecoder[F, List[String]] = jsonOf[F, List[String]]
+    implicit val instanceKindsEntityDecoder: EntityDecoder[F, List[String]]      = jsonOf[F, List[String]]
     implicit val instanceDetailsEntityDecoder: EntityDecoder[F, InstanceDetails] = jsonOf[F, InstanceDetails]
 
     private val getAllUri               = config.baseUri / "instances"
