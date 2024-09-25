@@ -12,9 +12,7 @@ object InstanceKindResponse {
   implicit val encoder: Encoder[InstanceKindResponse] =
     Encoder.instance[InstanceKindResponse] {
       case InstanceKindResponse(k) =>
-        Json.obj(
-          "kind" -> k.getString.asJson
-        )
+        Json.obj("kind" -> k.asJson)
     }
 
 }
