@@ -1,9 +1,10 @@
 package prices.config
 
 import cats.effect.kernel.Sync
-
+import org.http4s.Uri
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
+import pureconfig.module.http4s._
 
 case class Config(
     app: Config.AppConfig,
@@ -18,7 +19,7 @@ object Config {
   )
 
   case class SmartcloudConfig(
-      baseUri: String,
+      baseUri: Uri,
       token: String
   )
 

@@ -5,12 +5,16 @@ import cats.effect._
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.client.Client
+import org.http4s.headers.Authorization
 import prices.data._
+import prices.services.Exception.APICallFailure
+
+import scala.util.control.NonFatal
 
 object SmartcloudInstanceKindService {
 
   final case class Config(
-      baseUri: String,
+      baseUri: Uri,
       token: String
   )
 
@@ -23,12 +27,23 @@ object SmartcloudInstanceKindService {
 
     implicit val instanceKindsEntityDecoder: EntityDecoder[F, List[String]] = jsonOf[F, List[String]]
 
-    val getAllUri = s"${config.baseUri}/instances"
+    val getAllUri = config.baseUri / "instances"
+
+    val getAllRequest = Request[F](
+      method = Method.GET,
+      uri = getAllUri,
+      headers = Headers(
+        Authorization(Credentials.Token(AuthScheme.Bearer, config.token))
+      )
+    )
 
     override def getAll(): F[List[InstanceKind]] =
-      List("sc2-micro", "sc2-small", "sc2-medium") // Dummy data. Your implementation should call the smartcloud API.
-        .map(InstanceKind(_))
-        .pure[F]
+      client
+        .expect[List[String]](getAllRequest)
+        .map(_.map(InstanceKind(_)))
+        .recoverWith {
+          case NonFatal(e) => APICallFailure(e.getMessage).raiseError[F, List[InstanceKind]]
+        }
 
   }
 

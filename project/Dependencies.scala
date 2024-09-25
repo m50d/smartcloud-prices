@@ -25,6 +25,8 @@ object Dependencies {
     val circe      = "io.circe"              %% "circe-generic"   % V.circe
     val logback    = "ch.qos.logback"         % "logback-classic" % V.logback
     val pureConfig = "com.github.pureconfig" %% "pureconfig"      % V.pureConfig
+    // pureconfig-http4s is built against an older version of http4s
+    val pureConfigHttp4s = "com.github.pureconfig" %% "pureconfig-http4s" % V.pureConfig exclude ("org.http4s", "http4s-core_2.13")
   }
 
   object T { // Test dependencies

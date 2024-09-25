@@ -12,6 +12,7 @@ lazy val root = (project in file("."))
       L.circe,
       L.logback,
       L.pureConfig,
+      L.pureConfigHttp4s,
       T.munit,
       C.betterMonadicFor,
       C.kindProjector
