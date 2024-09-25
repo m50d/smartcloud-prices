@@ -15,7 +15,7 @@ object Dependencies {
 
     // Compiler
     val betterMonadicFor = "0.3.1"
-    val kindProjector    = "0.13.2"
+    val kindProjector    = "0.13.3"
   }
 
   object L { // Libraries
