@@ -16,6 +16,7 @@ object Server {
     val resource = for {
       client <- EmberClientBuilder.default[IO].build
       instanceKindService = SmartcloudInstanceKindService.make[IO](
+                              client,
                               SmartcloudInstanceKindService.Config(
                                 config.smartcloud.baseUri,
                                 config.smartcloud.token
