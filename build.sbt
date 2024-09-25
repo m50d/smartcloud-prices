@@ -8,6 +8,7 @@ lazy val root = (project in file("."))
       L.http4s("ember-server"),
       L.http4s("circe"),
       L.http4s("dsl"),
+      L.http4s("ember-client"),
       L.circe,
       L.logback,
       L.pureConfig,
