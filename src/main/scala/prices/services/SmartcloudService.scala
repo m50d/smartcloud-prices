@@ -1,7 +1,7 @@
 package prices.services
 
-import cats.implicits._
 import cats.effect._
+import cats.implicits._
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.client.Client
@@ -18,24 +18,28 @@ object SmartcloudService {
       token: String
   )
 
-  def make[F[_]: Concurrent](client: Client[F], config: Config): InstanceKindService[F] = new SmartcloudInstanceKindService(client, config)
+  def make[F[_]: Concurrent](client: Client[F], config: Config): InstanceKindService[F] = new SmartcloudService(client, config)
 
-  private final class SmartcloudInstanceKindService[F[_]: Concurrent](
+  private final class SmartcloudService[F[_]: Concurrent](
       client: Client[F],
       config: Config
-  ) extends InstanceKindService[F] {
+  ) extends InstanceKindService[F]
+      with InstanceDetailsService[F] {
 
     implicit val instanceKindsEntityDecoder: EntityDecoder[F, List[String]] = jsonOf[F, List[String]]
+    implicit val instanceDetailsEntityDecoder: EntityDecoder[F, InstanceDetails] = jsonOf[F, InstanceDetails]
 
-    private val getAllUri = config.baseUri / "instances"
-
-    private val getAllRequest = Request[F](
+    private val getAllUri               = config.baseUri / "instances"
+    private def getUri(k: InstanceKind) = config.baseUri / "instances" / k.getString
+    private def buildRequest(uri: Uri) = Request[F](
       method = Method.GET,
-      uri = getAllUri,
+      uri = uri,
       headers = Headers(
         Authorization(Credentials.Token(AuthScheme.Bearer, config.token))
       )
     )
+    private val getAllRequest               = buildRequest(getAllUri)
+    private def getRequest(k: InstanceKind) = buildRequest(getUri(k))
 
     override def getAll(): F[List[InstanceKind]] =
       client
@@ -43,6 +47,13 @@ object SmartcloudService {
         .map(_.map(InstanceKind(_)))
         .recoverWith {
           case NonFatal(e) => APICallFailure(e.getMessage).raiseError[F, List[InstanceKind]]
+        }
+
+    override def get(k: InstanceKind): F[InstanceDetails] =
+      client
+        .expect[InstanceDetails](getRequest(k))
+        .recoverWith {
+          case NonFatal(e) => APICallFailure(e.getMessage).raiseError[F, InstanceDetails]
         }
 
   }

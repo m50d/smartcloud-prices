@@ -6,7 +6,6 @@ import org.http4s.HttpRoutes
 import org.http4s.circe._
 import org.http4s.dsl.Http4sDsl
 import org.http4s.server.Router
-import prices.data.Price
 import prices.routes.protocol._
 import prices.services.PricesService
 
@@ -14,7 +13,7 @@ final case class PricesRoutes[F[_]: Sync](pricesService: PricesService[F]) exten
 
   val prefix = "/prices"
 
-  implicit val priceResponseEncoder = jsonEncoderOf[F, Price]
+  implicit val priceResponseEncoder = jsonEncoderOf[F, PriceResponse]
 
   private val get: HttpRoutes[F] = HttpRoutes.of {
     case GET -> Root :? InstanceKindQueryParam(k) =>
