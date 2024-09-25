@@ -22,14 +22,12 @@ object Server {
                                 config.smartcloud.token
                               )
                             )
-      httpApp = (
-                  InstanceKindRoutes[IO](instanceKindService).routes
-                ).orNotFound
+      httpApp = InstanceKindRoutes[IO](instanceKindService).routes.orNotFound
       server <- EmberServerBuilder
                   .default[IO]
                   .withHost(Host.fromString(config.app.host).get)
                   .withPort(Port.fromInt(config.app.port).get)
-                  .withHttpApp(Logger.httpApp(true, true)(httpApp))
+                  .withHttpApp(Logger.httpApp(logHeaders = true, logBody = true)(httpApp))
                   .build
     } yield ()
 
