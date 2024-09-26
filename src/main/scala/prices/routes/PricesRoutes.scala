@@ -2,7 +2,7 @@ package prices.routes
 
 import cats.effect._
 import cats.implicits._
-import org.http4s.HttpRoutes
+import org.http4s.{ EntityEncoder, HttpRoutes }
 import org.http4s.circe._
 import org.http4s.dsl.Http4sDsl
 import org.http4s.server.Router
@@ -13,7 +13,7 @@ final case class PricesRoutes[F[_]: Sync](pricesService: PricesService[F]) exten
 
   val prefix = "/prices"
 
-  implicit val priceResponseEncoder = jsonEncoderOf[F, PriceResponse]
+  private implicit val priceResponseEncoder: EntityEncoder[F, PriceResponse] = jsonEncoderOf[F, PriceResponse]
 
   private val get: HttpRoutes[F] = HttpRoutes.of {
     case GET -> Root :? InstanceKindQueryParam(k) =>

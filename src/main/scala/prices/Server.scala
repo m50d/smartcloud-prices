@@ -8,8 +8,8 @@ import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.middleware.Logger
 import prices.config.Config
-import prices.routes.{InstanceKindRoutes, PricesRoutes}
-import prices.services.{PricesService, SmartcloudService}
+import prices.routes.{ InstanceKindRoutes, PricesRoutes }
+import prices.services.{ PricesService, SmartcloudService }
 
 object Server {
 
@@ -17,22 +17,22 @@ object Server {
     val resource = for {
       client <- EmberClientBuilder.default[IO].build
       smartcloudService = SmartcloudService.make[IO](
-                              client,
-                              SmartcloudService.Config(
-                                config.smartcloud.baseUri,
-                                config.smartcloud.token
-                              )
+                            client,
+                            SmartcloudService.Config(
+                              config.smartcloud.baseUri,
+                              config.smartcloud.token
                             )
-      pricesService = PricesService.make[IO](smartcloudService)
+                          )
+      pricesService      = PricesService.make[IO](smartcloudService)
       instanceKindRoutes = InstanceKindRoutes[IO](smartcloudService)
-      pricesRoutes = PricesRoutes[IO](pricesService)
-      httpApp = (instanceKindRoutes.routes combineK pricesRoutes.routes).orNotFound
-      server <- EmberServerBuilder
-                  .default[IO]
-                  .withHost(Host.fromString(config.app.host).get)
-                  .withPort(Port.fromInt(config.app.port).get)
-                  .withHttpApp(Logger.httpApp(logHeaders = true, logBody = true)(httpApp))
-                  .build
+      pricesRoutes       = PricesRoutes[IO](pricesService)
+      httpApp            = (instanceKindRoutes.routes combineK pricesRoutes.routes).orNotFound
+      _ <- EmberServerBuilder
+             .default[IO]
+             .withHost(Host.fromString(config.app.host).get)
+             .withPort(Port.fromInt(config.app.port).get)
+             .withHttpApp(Logger.httpApp(logHeaders = true, logBody = true)(httpApp))
+             .build
     } yield ()
 
     Stream
