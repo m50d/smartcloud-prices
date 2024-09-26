@@ -5,9 +5,9 @@ import cats.effect.unsafe.implicits.global
 import io.circe.Json
 import io.circe.parser._
 import org.http4s.circe._
-import org.http4s.client.Client
+import org.http4s.client._
 import org.http4s.implicits._
-import org.http4s.{ Method, Request, Status }
+import org.http4s._
 import prices.data.{ InstanceDetails, InstanceKind }
 import prices.services.Exception.APICallFailure
 import prices.services.{ InstanceDetailsService, PricesService }
@@ -17,8 +17,8 @@ import java.time.Instant
 class PricesRoutesSuite extends munit.FunSuite {
   object StubDetailsService extends InstanceDetailsService[IO] {
     override def get(k: InstanceKind): IO[InstanceDetails] = k.getString match {
-      case "apicallfailure" => IO.raiseError(APICallFailure("failed"))
-      case "miscfailure"    => IO.raiseError(new RuntimeException("failed"))
+      case "apicallfailure" => IO.raiseError(APICallFailure("public"))
+      case "miscfailure"    => IO.raiseError(new RuntimeException("secret"))
       case _                => IO.pure(InstanceDetails(k, 0.12, Instant.parse("2020-04-29T03:15:02Z")))
     }
   }
@@ -40,12 +40,28 @@ class PricesRoutesSuite extends munit.FunSuite {
       .unsafeToFuture()
   }
 
+  test("api failure") {
+    val request: Request[IO] = Request(method = Method.GET, uri = uri"/prices?kind=apicallfailure")
+    client
+      .run(request)
+      .use { response =>
+        response.as[String].map { data =>
+          assertEquals(response.status, Status.ServiceUnavailable)
+          assert(data.contains("public"), data)
+        }
+      }
+      .unsafeToFuture()
+  }
+
   test("misc failure") {
     val request: Request[IO] = Request(method = Method.GET, uri = uri"/prices?kind=miscfailure")
     client
       .run(request)
       .use { response =>
-        IO.delay(assertEquals(Status.InternalServerError, response.status))
+        response.as[String].map { data =>
+          assertEquals(response.status, Status.InternalServerError)
+          assert(!data.contains("secret"), data)
+        }
       }
       .unsafeToFuture()
   }
