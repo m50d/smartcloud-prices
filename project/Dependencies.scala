@@ -21,8 +21,8 @@ object Dependencies {
   object L { // Libraries
     // Scala
     def http4s(module: String): ModuleID = "org.http4s" %% s"http4s-$module" % V.http4s
+    def circe(module: String): ModuleID  = "io.circe"   %% s"circe-$module"  % V.circe
 
-    val circe      = "io.circe"              %% "circe-generic"   % V.circe
     val logback    = "ch.qos.logback"         % "logback-classic" % V.logback
     val pureConfig = "com.github.pureconfig" %% "pureconfig"      % V.pureConfig
     // pureconfig-http4s is built against an older version of http4s
