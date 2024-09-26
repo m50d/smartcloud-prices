@@ -9,6 +9,8 @@
 
 ## Design decisions
  
+ - Library choice was guided by those in the existing project (e.g. ember client to match ember server, munit for testing).
+ I updated to approximately current versions where this was necessary due to incompatibility with my JVM or other upgrades.  
  - I switched the existing "dummy" implementation of `InstanceKindService#getAll` for one that calls the actual upstream
  API; I'm not sure whether this was intended in the requirements or not, but I felt it could cause confusion if the
  `instance-kinds` endpoint returned a different list of instance kinds from those that are accepted by the `prices`
