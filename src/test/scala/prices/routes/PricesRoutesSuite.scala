@@ -7,7 +7,7 @@ import io.circe.parser._
 import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.implicits._
-import org.http4s.{ Method, Request }
+import org.http4s.{ Method, Request, Status }
 import prices.data.{ InstanceDetails, InstanceKind }
 import prices.services.Exception.APICallFailure
 import prices.services.{ InstanceDetailsService, PricesService }
@@ -35,6 +35,16 @@ class PricesRoutesSuite extends munit.FunSuite {
       .expect[Json](request)
       .map { response =>
         assertEquals(expected, response)
+      }
+      .unsafeToFuture()
+  }
+
+  test("misc failure") {
+    val request: Request[IO] = Request(method = Method.GET, uri = uri"/prices?kind=miscfailure")
+    client
+      .run(request)
+      .use { response =>
+        IO.delay(assertEquals(Status.InternalServerError, response.status))
       }
       .unsafeToFuture()
   }
