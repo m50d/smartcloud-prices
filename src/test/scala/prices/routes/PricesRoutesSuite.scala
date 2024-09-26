@@ -25,7 +25,8 @@ class PricesRoutesSuite extends munit.FunSuite {
 
   private val pricesService = PricesService.make(StubDetailsService)
   private val pricesRoutes  = PricesRoutes(pricesService)
-  private val client        = Client.fromHttpApp(pricesRoutes.routes.orNotFound)
+  private val errorHandling = new ErrorHandling[IO]
+  private val client        = Client.fromHttpApp(errorHandling.errorHandling(pricesRoutes.routes).orNotFound)
 
   test("success") {
     val expected = parse("""{"kind":"sc2-medium","amount":0.12}""".stripMargin).toOption.get

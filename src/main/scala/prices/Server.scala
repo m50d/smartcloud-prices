@@ -8,7 +8,7 @@ import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.middleware.Logger
 import prices.config.Config
-import prices.routes.{ InstanceKindRoutes, PricesRoutes }
+import prices.routes.{ ErrorHandling, InstanceKindRoutes, PricesRoutes }
 import prices.services.{ PricesService, SmartcloudService }
 
 object Server {
@@ -26,7 +26,8 @@ object Server {
       pricesService      = PricesService.make[IO](smartcloudService)
       instanceKindRoutes = InstanceKindRoutes[IO](smartcloudService)
       pricesRoutes       = PricesRoutes[IO](pricesService)
-      httpApp            = (instanceKindRoutes.routes combineK pricesRoutes.routes).orNotFound
+      errorHandling      = new ErrorHandling[IO]
+      httpApp            = errorHandling.errorHandling(instanceKindRoutes.routes combineK pricesRoutes.routes).orNotFound
       _ <- EmberServerBuilder
              .default[IO]
              .withHost(Host.fromString(config.app.host).get)
