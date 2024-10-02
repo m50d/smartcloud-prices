@@ -1,11 +1,12 @@
 package prices.services
 
-import cats.effect.{ Clock, Temporal }
+import cats.MonadError
 import cats.effect.std.MapRef
+import cats.effect.{ Clock, Temporal }
+import cats.syntax.applicativeError._
 import cats.syntax.flatMap._
 import cats.syntax.foldable._
 import cats.syntax.functor._
-import cats.syntax.applicativeError._
 import cats.syntax.option._
 import fs2.Stream
 import org.log4s._
@@ -14,7 +15,7 @@ import prices.data.{ InstanceDetails, InstanceKind }
 
 import scala.util.control.NonFatal
 
-class CachePopulatorService[F[_]: Temporal](
+class CachePopulatorService[F[_]: MonadError[*[_], Throwable]](
     cache: MapRef[F, InstanceKind, Option[InstanceDetails]],
     underlying: InstanceKindService[F] with InstanceDetailsService[F],
     config: AppConfig
@@ -60,9 +61,9 @@ class CachePopulatorService[F[_]: Temporal](
           cache(k).modify {
             case Some(d) =>
               if (d.timestamp plus config.systemMaxStaleness isAfter now)
-                (None, Vector.empty)
-              else
                 (Some(d), Vector(k))
+              else
+                (None, Vector.empty)
             case None =>
               logger.error(s"InstanceKind ${k.getString} mysteriously disappeared from cache")
               (None, Vector.empty) // should never happen, but should be safe to continue if so
@@ -77,7 +78,10 @@ class CachePopulatorService[F[_]: Temporal](
     notReaped <- doReap(potentiallyStale)
   } yield fetched ++ notReaped
 
-  val cachePopulatorFiber: Stream[F, Set[InstanceKind]] =
+  def cachePopulatorFiber(
+      implicit
+      t: Temporal[F]
+  ): Stream[F, Set[InstanceKind]] =
     // Stream.unit ++ ... so that the first call happens immediately
     (Stream.unit ++ Stream.awakeEvery(config.pollInterval)).evalScan(Set.empty[InstanceKind]) {
       case (current, _) => doPollAndReap(current)

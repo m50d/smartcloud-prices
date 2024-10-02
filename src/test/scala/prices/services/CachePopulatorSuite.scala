@@ -1,9 +1,8 @@
 package prices.services
 
 import cats.Applicative
-import cats.effect.{ Clock, IO }
 import cats.effect.std.MapRef
-import cats.effect.unsafe.implicits.global
+import cats.effect.{ Clock, SyncIO }
 import prices.StubTimes
 import prices.config.Config.AppConfig
 import prices.data.{ InstanceDetails, InstanceKind }
@@ -20,48 +19,43 @@ object InstanceKindSyntax {
     def k(@unused args: Any*): InstanceKind = InstanceKind(sc.parts.head)
   }
 }
-import InstanceKindSyntax._
+import prices.services.InstanceKindSyntax._
 
-object StubSmartcloudService extends StubDetailsService with InstanceKindService[IO] {
-  override def getAll(): IO[List[InstanceKind]] = IO.pure(List(k"a", k"b"))
+object StubSmartcloudService extends StubDetailsService[SyncIO] with InstanceKindService[SyncIO] {
+  override def getAll(): SyncIO[List[InstanceKind]] = SyncIO.pure(List(k"a", k"b"))
 }
 
-object StubClock extends Clock[IO] {
-  override def applicative: Applicative[IO] = Applicative[IO]
+object StubClock extends Clock[SyncIO] {
+  override def applicative: Applicative[SyncIO] = Applicative[SyncIO]
 
-  override def monotonic: IO[FiniteDuration] = realTime
+  override def monotonic: SyncIO[FiniteDuration] = realTime
 
-  override val realTime: IO[FiniteDuration] = IO.pure(Duration.between(Instant.EPOCH, StubTimes.start.plusSeconds(5)).toScala)
+  override val realTime: SyncIO[FiniteDuration] = SyncIO.pure(Duration.between(Instant.EPOCH, StubTimes.start.plusSeconds(5)).toScala)
 }
 
 class CachePopulatorSuite extends munit.FunSuite {
   private val config                = AppConfig("", 0, 3.second, 3.second)
   private val map                   = new ConcurrentHashMap[InstanceKind, InstanceDetails]()
-  private val mapRef                = MapRef.fromConcurrentHashMap[IO, InstanceKind, InstanceDetails](map)
+  private val mapRef                = MapRef.fromConcurrentHashMap[SyncIO, InstanceKind, InstanceDetails](map)
   private val cachePopulatorService = new CachePopulatorService(mapRef, StubSmartcloudService, config)(implicitly, StubClock)
 
   test("poll") {
-    cachePopulatorService.doPoll
-      .map { res =>
-        assert(map.containsKey(k"a"))
-        assert(map.containsKey(k"b"))
-        assert(!map.containsKey(k"c"))
-        assertEquals(res, Set(k"a", k"b"))
-      }
-      .unsafeToFuture()
+    val res = cachePopulatorService.doPoll.unsafeRunSync()
+    assert(map.containsKey(k"a"))
+    assert(map.containsKey(k"b"))
+    assert(!map.containsKey(k"c"))
+    assertEquals(res, Set(k"a", k"b"))
   }
 
   /** Note this test will fail if run in isolation, as it relies on the side effects of the previous test
     */
   test("reap") {
-    map.put(k"c", InstanceDetails(k"c", BigDecimal(2), StubTimes.start.plusSeconds(1)))
+    map.put(k"c", InstanceDetails(k"c", BigDecimal(2), StubTimes.start.plusSeconds(4)))
     assert(map.containsKey(k"b"))
-    cachePopulatorService.doReap(Set(k"a", k"c")).map { res =>
-      assert(map.containsKey("c"))
-      assert(map.containsKey("b"))
-      assert(!map.containsKey("a"))
-      assertEquals(res, Set(k"c"))
-    }
-
+    val res = cachePopulatorService.doReap(Set(k"a", k"c")).unsafeRunSync()
+    assert(map.containsKey(k"c"))
+    assert(map.containsKey(k"b"))
+    assert(!map.containsKey(k"a"))
+    assertEquals(res, Set(k"c"))
   }
 }

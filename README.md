@@ -50,19 +50,20 @@
     traits that can be composed in both test and real, and/or by using an automatic wiring library such as macwire.
     - I haven't added any "unit-style" tests of `PricesRoutes` with a stub
     `PricesService`. IMO there is currently ample test coverage given the low complexity of the code
- - I haven't added any tests of `SmartcloudService`.  
+ - I haven't added any tests of `SmartcloudService`.
  For a "glue" service like this, misunderstanding the interface with the upstream service is a more likely source
  of errors, but unit testing cannot catch those errors as any stub impl will repeat those same misunderstandings.
  In a real deployment I would ideally want automated end-to-end tests that confirmed that this service interoperated
  correctly with the real upstream API, especially if the cloud provider offers a test endpoint that we can use.
  This would also serve to e.g. alert us if the upstream API changed in an incompatible way.
  - I've added targeted unit tests of the most logic-heavy parts of `CachePopulatorService` to reach a reasonable level 
- of confidence that it is correct. 
+ of confidence that it is correct.
  - I followed the "final tagless" structure of existing classes parameterised by `F[_]`; I was hoping to get some value
  out of this by being able to use a simpler type like `SyncIO` or `Id` in the test class, but in fact 
  `Client.fromHttpApp` (http4s' recommended approach to testing) requires `Async` so `F` is always `IO`. So IMO while
- "business" services like `PricesService` may see some benefit from this style (it would be possible to implement e.g.
- a unit test of `PricesService` using `Id`), the `*Routes` classes will always use `IO` and it would probably be better
+ "business" services like `PricesService` and `CachePopulatorService` see some benefit from this style (it would be 
+ possible to implement e.g. a unit test of `PricesService` using `Id`, and `CachePopulatorSuite` uses `SyncIO`),
+ the `*Routes` classes will always use `IO` and it would probably be better
  to write them concretely using `IO`.
 
 ## How to run this code
