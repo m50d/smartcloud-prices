@@ -17,6 +17,7 @@ class ErrorHandling[F[_]: Concurrent] extends Http4sDsl[F] {
   private def knownErrorResponse(error: prices.services.Exception): F[Response[F]] = error match {
     // The syntax wrapper should be applied implicitly, but for some reason it isn't
     case Exception.APICallFailure(message) => http4sServiceUnavailableSyntax(Status.ServiceUnavailable)(message)
+    case Exception.NoDetailsAvailable(k)   => http4sNotImplementedSyntax(Status.NotImplemented)(s"No details available for instance kind ${k.getString}")
   }
   private def unknownErrorResponse(error: Throwable): F[Response[F]] = {
     logger.error(error)(s"Unexpected error: ${error.getMessage}")
