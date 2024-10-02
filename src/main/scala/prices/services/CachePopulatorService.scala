@@ -60,16 +60,15 @@ class CachePopulatorService[F[_]: Temporal](
           cache(k).modify {
             case Some(d) =>
               if (d.timestamp plus config.systemMaxStaleness isAfter now)
-                (None, Vector.empty)
+                (None, Set.empty)
               else
-                (Some(d), Vector(k))
+                (Some(d), Set(k))
             case None =>
               logger.error(s"InstanceKind ${k.getString} mysteriously disappeared from cache")
-              (None, Vector.empty) // should never happen, but should be safe to continue if so
+              (None, Set.empty) // should never happen, but should be safe to continue if so
           }
         }
       }
-      .map(_.toSet)
 
   private def doPollAndReap(current: Set[InstanceKind]) = for {
     fetched <- doPoll
