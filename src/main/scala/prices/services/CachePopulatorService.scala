@@ -52,7 +52,7 @@ class CachePopulatorService[F[_]: Temporal](
     * @return
     *   those instanceKinds that have not been reaped
     */
-  private def doReap(potentiallyStale: Set[InstanceKind]) =
+  private[services] def doReap(potentiallyStale: Set[InstanceKind]) =
     clock.realTimeInstant
       .flatMap { now =>
         // should be potentiallyStale.unorderedFoldMapM but that doesn't exist
@@ -60,15 +60,16 @@ class CachePopulatorService[F[_]: Temporal](
           cache(k).modify {
             case Some(d) =>
               if (d.timestamp plus config.systemMaxStaleness isAfter now)
-                (None, Set.empty)
+                (None, Vector.empty)
               else
-                (Some(d), Set(k))
+                (Some(d), Vector(k))
             case None =>
               logger.error(s"InstanceKind ${k.getString} mysteriously disappeared from cache")
-              (None, Set.empty) // should never happen, but should be safe to continue if so
+              (None, Vector.empty) // should never happen, but should be safe to continue if so
           }
         }
       }
+      .map(_.toSet)
 
   private def doPollAndReap(current: Set[InstanceKind]) = for {
     fetched <- doPoll
