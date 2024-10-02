@@ -60,4 +60,18 @@ class CachePopulatorSuite extends munit.FunSuite {
     assert(!map.containsKey(k"a"))
     assertEquals(res, Set(k"c"))
   }
+
+  /** Note this test will fail if run in isolation, as it relies on the side effects of the previous tests
+    */
+  test("pollAndReap") {
+    map.put(k"d", InstanceDetails(k"d", BigDecimal(2), StubTimes.start))
+    val res = cachePopulatorService.doPollAndReap(Set(k"c", k"d")).unsafeRunSync()
+    assert(map.containsKey(k"a"))
+    assert(map.containsKey(k"b"))
+    assert(map.containsKey(k"c"))
+    assert(!map.containsKey(k"d"))
+    assert(!map.containsKey(k"apicallfailure"))
+    assert(!map.containsKey(k"miscfailure"))
+    assertEquals(res, Set(k"a", k"b", k"c"))
+  }
 }

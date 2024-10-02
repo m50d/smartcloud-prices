@@ -72,7 +72,7 @@ class CachePopulatorService[F[_]: MonadError[*[_], Throwable]](
       }
       .map(_.toSet)
 
-  private def doPollAndReap(current: Set[InstanceKind]) = for {
+  private[services] def doPollAndReap(current: Set[InstanceKind]) = for {
     fetched <- doPoll
     potentiallyStale = current -- fetched
     notReaped <- doReap(potentiallyStale)
