@@ -26,13 +26,13 @@ class CachePopulatorService[F[_]: Temporal](
 
   /** Polls all available instance types, putting them in the cache, and returns those instances that were polled
     */
-  private val doPoll = underlying
+  private[services] val doPoll = underlying
     .getAll()
     .flatMap {
       _.foldMapM { k =>
         underlying
           .get(k)
-          .map(details => cache(k).set(details.some))
+          .flatMap(details => cache(k).set(details.some))
           .as(Set(k))
           // Early recover so that one failed call to underlying doesn't fail the whole poll
           .recover {
