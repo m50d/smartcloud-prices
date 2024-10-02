@@ -22,7 +22,7 @@ object InstanceKindSyntax {
 import prices.services.InstanceKindSyntax._
 
 object StubSmartcloudService extends StubDetailsService[SyncIO] with InstanceKindService[SyncIO] {
-  override def getAll(): SyncIO[List[InstanceKind]] = SyncIO.pure(List(k"a", k"b"))
+  override def getAll(): SyncIO[List[InstanceKind]] = SyncIO.pure(List(k"a", k"apicallfailure", k"miscfailure", k"b"))
 }
 
 object StubClock extends Clock[SyncIO] {
@@ -43,6 +43,8 @@ class CachePopulatorSuite extends munit.FunSuite {
     val res = cachePopulatorService.doPoll.unsafeRunSync()
     assert(map.containsKey(k"a"))
     assert(map.containsKey(k"b"))
+    assert(!map.containsKey(k"apicallfailure"))
+    assert(!map.containsKey(k"miscfailure"))
     assert(!map.containsKey(k"c"))
     assertEquals(res, Set(k"a", k"b"))
   }
