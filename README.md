@@ -23,7 +23,7 @@
  code between the implementation of the price call and the instance kind call. I kept the `InstanceKindService` and 
  `InstanceDetailsService` interfaces separate so this is easy to change in the future if need be.
  - Since the main goal of our "caching" is to reduce error responses to the end user rather than reduce load on upstream,
- I implemented `CachePopulatorService` that polls the upstream API regularly rather than a read-through cache. This way,
+ I implemented a `CachePopulatorService` that polls the upstream API regularly rather than a read-through cache. This way,
  the client will very rarely see an error (only if upstream was erroring for longer than `max-staleness`) and there is
  no occasional inconsistent behaviour on certain client calls (e.g. slow responses while we retry calling upstream).
  - I had the `CachePopulatorService` execute its regular population calls via a `Stream` to align with what we were 
