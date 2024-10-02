@@ -2,22 +2,32 @@
 
 ## Assumptions
 
- - Since this is a realtime API, we should make an upstream call for every call rather than e.g. caching responses
-    - In particular, in the case of an error we should propagate an error to our users rather than e.g. fall back to old data
  - Errors and status from the upstream API are safe to expose to users
- - The example call with a `kind` parameter is the only style we need to support 
+ - The example call with a `kind` parameter is the only style we need to support
+ - Upstream's timestamps and the local machine clock are reasonably accurate (relative to the configured `max-staleness`)
 
 ## Design decisions
  
  - Library choice was guided by those in the existing project (e.g. ember client to match ember server, munit for testing).
- I updated to approximately current versions where this was necessary due to incompatibility with my JVM or other upgrades.  
+ I updated to approximately current versions where this was necessary due to incompatibility with my JVM or other upgrades.
+ (and because I wanted to use cats-effect 3 `MapRef`)
+    - I implemented my own caching logic on top of `MapRef` to show some coding; in a real product I would likely use
+    an established caching library instead.
  - I switched the existing "dummy" implementation of `InstanceKindService#getAll` for one that calls the actual upstream
- API; I'm not sure whether this was intended in the requirements or not, but I felt it could cause confusion if the
- `instance-kinds` endpoint returned a different list of instance kinds from those that are accepted by the `prices`
- endpoint.
+ API; I'm not sure whether this was intended in the requirements or not, but it was necessary for the cache populator.
+    - Note that the `instance-kinds` endpoint has partially changed as a side effect; it now calls through to upstream.
+    If this API was part of the requirements then I would update it to share the cache (which is surprisingly awkward
+    due to the API of `MapRef` being optimised for concurrent access to separate keys) but currently I consider it more 
+    of a debugging API
  - I implemented a combined `SmartcloudService` rather than a specific `SmartcloudPriceService`, as I wanted to share
  code between the implementation of the price call and the instance kind call. I kept the `InstanceKindService` and 
  `InstanceDetailsService` interfaces separate so this is easy to change in the future if need be.
+ - Since the main goal of our "caching" is to reduce error responses to the end user rather than reduce load on upstream,
+ I implemented `CachePopulatorService` that polls the upstream API regularly rather than a read-through cache. This way,
+ the client will very rarely see an error (only if upstream was erroring for longer than `max-staleness`) and there is
+ no occasional inconsistent behaviour on certain client calls (e.g. slow responses while we retry calling upstream).
+ - I had the `CachePopulatorService` execute its regular population calls via a `Stream` to align with what we were 
+ already doing in `Server`. 
  - I followed the existing code structure arranged by "vertical" layer (`data`/`routes`/`services`). IMO it would be
  better to arrange the code by business/feature area.
  - I moved `Exception` into a common place and made an `ErrorHandling` "middleware" that recognises it. IME maintaining
@@ -38,14 +48,16 @@
     - There is some duplication of the dependency "wiring up" between `PricesRoutesSuite` and the real `Server` impl.
     Ideally I would look to avoid this, perhaps by using a lightweight cake style where the "wiring" code lives in
     traits that can be composed in both test and real, and/or by using an automatic wiring library such as macwire.
-    - I haven't added any more specific tests of other services or "unit-style" tests of `PricesRoutes` with a stub
-    `PricesService`. IMO there is currently ample test coverage given the low complexity of the code we're testing;
-    more complex logic would warrant more tests to achieve a reasonable level of confidence in its correctness.
-    For a "glue" service like this, misunderstanding the interface with the upstream service is a more likely source
-    of errors, but unit testing cannot catch those errors as any stub impl will repeat those same misunderstandings.
-    In a real deployment I would ideally want automated end-to-end tests that confirmed that this service interoperated
-    correctly with the real upstream API, especially if the cloud provider offers a test endpoint that we can use.
-    This would also serve to e.g. alert us if the upstream API changed in an incompatible way.
+    - I haven't added any "unit-style" tests of `PricesRoutes` with a stub
+    `PricesService`. IMO there is currently ample test coverage given the low complexity of the code
+ - I haven't added any tests of `SmartcloudService`.  
+ For a "glue" service like this, misunderstanding the interface with the upstream service is a more likely source
+ of errors, but unit testing cannot catch those errors as any stub impl will repeat those same misunderstandings.
+ In a real deployment I would ideally want automated end-to-end tests that confirmed that this service interoperated
+ correctly with the real upstream API, especially if the cloud provider offers a test endpoint that we can use.
+ This would also serve to e.g. alert us if the upstream API changed in an incompatible way.
+ - I've added targeted unit tests of the most logic-heavy parts of `CachePopulatorService` to reach a reasonable level 
+ of confidence that it is correct. 
  - I followed the "final tagless" structure of existing classes parameterised by `F[_]`; I was hoping to get some value
  out of this by being able to use a simpler type like `SyncIO` or `Id` in the test class, but in fact 
  `Client.fromHttpApp` (http4s' recommended approach to testing) requires `Async` so `F` is always `IO`. So IMO while

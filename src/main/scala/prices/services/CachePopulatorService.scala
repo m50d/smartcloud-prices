@@ -78,6 +78,7 @@ class CachePopulatorService[F[_]: Temporal](
   } yield fetched ++ notReaped
 
   val cachePopulatorFiber: Stream[F, Set[InstanceKind]] =
+    // Stream.unit ++ ... so that the first call happens immediately
     (Stream.unit ++ Stream.awakeEvery(config.pollInterval)).evalScan(Set.empty[InstanceKind]) {
       case (current, _) => doPollAndReap(current)
     }
