@@ -20,8 +20,7 @@
     - Note that the `instance-kinds` endpoint has partially changed as a side effect; it now calls through to upstream.
       If this API was part of the requirements then I would update it to share the cache (which is surprisingly awkward
       due to the API of `MapRef` being optimised for concurrent access to separate keys) but currently I consider it
-      more
-      of a debugging API
+      more of a debugging API.
 - I implemented a combined `SmartcloudService` rather than a specific `SmartcloudPriceService`, as I wanted to share
   code between the implementation of the price call and the instance kind call. I kept the `InstanceKindService` and
   `InstanceDetailsService` interfaces separate so this is easy to change in the future if need be.
