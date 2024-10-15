@@ -15,7 +15,7 @@ import prices.services.{ CachePopulatorService, CachedDetailsService, PricesServ
 
 object Server {
 
-  def serve(config: Config): Stream[IO, ExitCode] = {
+  def serve(config: Config): Stream[IO, Set[InstanceKind]] = {
     val resource = for {
       client <- EmberClientBuilder.default[IO].build
       smartcloudService = SmartcloudService.make[IO](
@@ -42,7 +42,7 @@ object Server {
     } yield cachePopulator
 
     Stream.resource(resource).flatMap { cachePopulator =>
-      Stream.never[IO] concurrently cachePopulator.cachePopulatorFiber
+      cachePopulator.cachePopulatorFiber
     }
   }
 
